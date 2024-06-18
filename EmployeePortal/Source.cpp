@@ -1,16 +1,26 @@
 #include <iostream>
 #include <string>
 #include <ctime>
-#include <map>
 #include <vector>
 
 
 using namespace std;
 
+class invalidUser : public exception {
+private:
+	string message;
+public:
+	invalidUser(string msg) : message(msg) {}
+	const char* what() const throw() {
+		return message.c_str();
+	}
+};
+
 class Time {
 private:
-	int hour = -1, minute = -1;
+	int hour, minute;
 public:
+	Time() : hour(-1), minute(-1) {}
 	Time(int hour, int minute) {
 		this->hour = hour;
 		this->minute = minute;
@@ -33,6 +43,7 @@ private:
 	string username, password;
 	bool permanent;
 	Time schedule[7][2]; // 7 Days per Week | [Clock In Time, Clock Out Time]
+	vector<string> alerts;
 	void showSchedule(User* user) {
 		for (int i = 0; i < 7; i++) {
 			cout << "In: " << user->schedule[i][0] << " | Out: " << user->schedule[i][1] << endl;
@@ -86,7 +97,7 @@ public:
 	string getName() { return username; }
 	int getID() { return ID; }
 	int getPay() { return pay; }
-	bool workStatus() { return permanent; }
+	bool isPermanent() { return permanent; }
 };
 
 class Employee : public User {
@@ -122,13 +133,16 @@ public:
 class Accountant : public virtual User, public virtual Administrative {
 public:
 	void findPay(int ID, vector<User>& users) {
-		for (User u : users) {
-			if (u.getID() == ID) {
-				cout << "ID: " << u.getID() << "\nName: " << u.getName() << "\nPay: " << u.getPay() << endl;
-				return;
-			}
+		User* user = nullptr;
+		try {
+			user = findUserByID(ID, users);
 		}
-		cout << "No user found with ID: " << ID << endl;
+		catch (invalidUser& e) {
+			cout << "Error: " << e.what() << endl;
+			return;
+		}
+
+		cout << "ID: " << user->getID() << "\nName: " << user->getName() << "\nPay: " << user->getPay() << endl;
 	}
 };
 
@@ -138,26 +152,33 @@ private:
 	void x() {} // Helper function - Display Current Schedule, Ask what to change, Change.
 public:
 	virtual void changeSchedule(int ID, vector<User>& users) {
-		for (User u : users) {
-			if (u.getID() == ID) {
-				if (!u.workStatus()) {
-					// Change schedule
-				}
-				else {
-					cout << "This employee is not casual. Their schedule must be changed by a manager!\n";
-					return;
-				}
-			}
+		User* user = nullptr;
+		try {
+			user = findUserByID(ID, users);
 		}
-		cout << "No user found with ID: " << ID << endl;
+		catch (invalidUser& e) {
+			cout << "Error: " << e.what() << endl;
+			return;
+		}
+
+		if (!user->isPermanent()) {
+			// Change schedule
+		}
+		else {
+			cout << "This employee is not casual. Their schedule must be changed by a manager!\n";
+			return;
+		}
 	}
 	void findSchedule(int ID, vector<User>& users) {
-		for (User u : users) {
-			if (u.getID() == ID) {
-				// Display Schedule
-			}
+		User* user = nullptr;
+		try {
+			user = findUserByID(ID, users);
 		}
-		cout << "No user found with ID: " << ID << endl;
+		catch (invalidUser& e) {
+			cout << "Error: " << e.what() << endl;
+			return;
+		}
+		// Display schedule
 	}
 };
 
@@ -166,20 +187,33 @@ class Manager : public DutyManager, public Accountant {
 	// Add employee
 public:
 	void changeSchedule(int ID, vector<User>& users) override {
-		for (User u : users) {
-			if (u.getID() == ID) {
-				// Change schedule
-			}
+		User* user = nullptr;
+		try {
+			user = findUserByID(ID, users);
 		}
-		cout << "No user found with ID: " << ID << endl;
+		catch (invalidUser& e) {
+			cout << "Error: " << e.what() << endl;
+			return;
+		}
+		// Change schedule
 	}
 	void addEmployee(vector<User>& users) {
 
 	}
 };
 
+User* findUserByID(int ID, vector<User>& users) {
+	for (User u : users) {
+		if (u.getID() == ID) {
+			return &u;
+		}
+	}
+	throw invalidUser("The following ID does not exist: " + to_string(ID));
+}
+
 vector<User> loadFromFile() {
 	// FORMAT: type,id,username,password,perm/casual,Pay,clockInTimeMonday clockOutTimeMonday ... clockInTimeSunday clockOutTimeSunday
+	// Seperate file for Manager, Employee, ...
 	return {};
 }
 
@@ -187,4 +221,5 @@ int main() {
 	vector<User> users = loadFromFile();
 	User* currentUser = nullptr;
 	
+	return 0;
 }
