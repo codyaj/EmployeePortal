@@ -6,6 +6,7 @@
 
 using namespace std;
 
+
 class invalidUser : public exception {
 private:
 	string message;
@@ -100,6 +101,8 @@ public:
 	bool isPermanent() { return permanent; }
 };
 
+User* findUserByID(int ID, vector<unique_ptr<User>>& users); // Function prototype
+
 class Employee : public User {
 private:
 	Time clockedIn[7][2];
@@ -115,16 +118,17 @@ private:
 		clockedIn[newtime.tm_wday - 1][index](newtime.tm_hour, newMin);
 	}
 public:
+	Employee(int id, string user, string pass, bool perm, int Pay, string sched) : User(id, user, pass, perm, Pay, sched) {}
 	void clockIn() { recordTime(0); }
 	void clockOut() { recordTime(1); }
 };
 
 class Administrative {
 public:
-	void searchByName(string name, vector<User>& users) {
-		for (User u : users) {
-			if (u.getName().find(name) != string::npos) {
-				cout << "Possible Match: " << u.getName() << " | ID: " << u.getID() << endl;;
+	void searchByName(string name, vector<unique_ptr<User>>& users) {
+		for (auto& u : users) {
+			if (u->getName().find(name) != string::npos) {
+				cout << "Possible Match: " << u->getName() << " | ID: " << u->getID() << endl;;
 			}
 		}
 	}
@@ -132,7 +136,8 @@ public:
 
 class Accountant : public virtual User, public virtual Administrative {
 public:
-	void findPay(int ID, vector<User>& users) {
+	Accountant(int id, string user, string pass, bool perm, int Pay, string sched) : User(id, user, pass, perm, Pay, sched) {}
+	void findPay(int ID, vector<unique_ptr<User>>& users) {
 		User* user = nullptr;
 		try {
 			user = findUserByID(ID, users);
@@ -151,7 +156,8 @@ class DutyManager : public virtual User, public virtual Administrative {
 private:
 	void x() {} // Helper function - Display Current Schedule, Ask what to change, Change.
 public:
-	virtual void changeSchedule(int ID, vector<User>& users) {
+	DutyManager(int id, string user, string pass, bool perm, int Pay, string sched) : User(id, user, pass, perm, Pay, sched) {}
+	virtual void changeSchedule(int ID, vector<unique_ptr<User>>& users) {
 		User* user = nullptr;
 		try {
 			user = findUserByID(ID, users);
@@ -169,7 +175,7 @@ public:
 			return;
 		}
 	}
-	void findSchedule(int ID, vector<User>& users) {
+	void findSchedule(int ID, vector<unique_ptr<User>>& users) {
 		User* user = nullptr;
 		try {
 			user = findUserByID(ID, users);
@@ -186,7 +192,8 @@ class Manager : public DutyManager, public Accountant {
 	// changeSchedule override dont check if casual
 	// Add employee
 public:
-	void changeSchedule(int ID, vector<User>& users) override {
+	Manager(int id, string user, string pass, bool perm, int Pay, string sched) : DutyManager(id, user, pass, perm, Pay, sched), Accountant(id, user, pass, perm, Pay, sched), User(id, user, pass, perm, Pay, sched) {}
+	void changeSchedule(int ID, vector<unique_ptr<User>>& users) override {
 		User* user = nullptr;
 		try {
 			user = findUserByID(ID, users);
@@ -197,29 +204,26 @@ public:
 		}
 		// Change schedule
 	}
-	void addEmployee(vector<User>& users) {
+	void addEmployee(vector<unique_ptr<User>>& users) {
 
 	}
 };
 
-User* findUserByID(int ID, vector<User>& users) {
-	for (User u : users) {
-		if (u.getID() == ID) {
-			return &u;
-		}
-	}
-	throw invalidUser("The following ID does not exist: " + to_string(ID));
-}
-
-vector<User> loadFromFile() {
+vector<unique_ptr<User>> loadFromFile() {
 	// FORMAT: type,id,username,password,perm/casual,Pay,clockInTimeMonday clockOutTimeMonday ... clockInTimeSunday clockOutTimeSunday
 	// Seperate file for Manager, Employee, ...
 	return {};
 }
 
 int main() {
-	vector<User> users = loadFromFile();
+	vector<unique_ptr<User>> users = loadFromFile();
 	User* currentUser = nullptr;
-	
+
+	// Examples
+	users.push_back(make_unique<Employee>(1, "emp_user", "password", false, 70000, "9:00 17:00 9:00 17:00 0:00 0:00 0:00 0:00 0:00 0:00 0:00 0:00 0:00 0:00"));
+	users.push_back(make_unique<Accountant>(2, "acc_user", "password", true, 80000, "9:00 17:00 9:00 17:00 9:00 17:00 9:00 17:00 9:00 17:00 0:00 0:00 0:00 0:00"));
+	users.push_back(make_unique<DutyManager>(3, "dm_user", "password", false, 90000, "10:00 18:00 10:00 18:00 10:00 18:00 10:00 18:00 10:00 18:00 0:00 0:00 0:00 0:00"));
+	users.push_back(make_unique<Manager>(4, "mgr_user", "password", true, 100000, "8:00 16:00 8:00 16:00 8:00 16:00 8:00 16:00 8:00 16:00 0:00 0:00 0:00 0:00"));
+
 	return 0;
 }
