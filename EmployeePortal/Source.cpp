@@ -9,18 +9,21 @@ using namespace std;
 
 class Time {
 private:
-	int hour = -1, minute = -1, second = -1;
+	int hour = -1, minute = -1;
 public:
-	friend std::ostream& operator<<(std::ostream& os, Time& t);
-	void operator()(int hour, int minute, int second) {
+	Time(int hour, int minute) {
 		this->hour = hour;
 		this->minute = minute;
-		this->second = second;
+	}
+	friend std::ostream& operator<<(std::ostream& os, Time& t);
+	void operator()(int hour, int minute) {
+		this->hour = hour;
+		this->minute = minute;
 	}
 };
 
 std::ostream& operator<<(std::ostream& os, Time& t) {
-	os << t.hour << ":" << t.minute << ":" << t.second;
+	os << t.hour << ":" << t.minute;
 	return os;
 }
 
@@ -29,19 +32,24 @@ private:
 	int ID, pay;
 	string username, password;
 	bool permanent;
-	int schedule[7][2]; // 7 Days per Week | [Clock In Time, Clock Out Time]
+	Time schedule[7][2]; // 7 Days per Week | [Clock In Time, Clock Out Time]
+	void showSchedule(User* user) {
+		for (int i = 0; i < 7; i++) {
+			cout << "In: " << user->schedule[i][0] << " | Out: " << user->schedule[i][1] << endl;
+		}
+	}
 public:
 	User(int id, string user, string pass, bool perm, int Pay, string sched) : ID(id), username(user), password(pass), permanent(perm), pay(Pay) {
 		// split sched string into the schedule array
-		string temp;
+		string tempHour, tempMinute;
 		int day = 0, counter = 0;
 		for (char c : sched) {
-			if (c != ' ') {
-				temp += c;
-			}
-			else {
-				schedule[day][counter] = stoi(temp);
-				temp = "";
+			if (c == ' ') {
+				Time t(stoi(tempHour), stoi(tempMinute));
+				tempHour = "";
+				tempMinute = "";
+
+				schedule[day][counter] = t;
 				if (counter == 0) {
 					counter += 1;
 				}
@@ -50,6 +58,13 @@ public:
 					day += 1;
 				}
 			}
+			else if (c == ':') {
+				tempHour = tempMinute;
+				tempMinute = "";
+			}
+			else {
+				tempMinute += c;
+			}
 		}
 	}
 	bool login(string user, string pass) {
@@ -57,9 +72,6 @@ public:
 			return true;
 		}
 		return false;
-	}
-	bool logout() {
-	
 	}
 	void viewSchedule() {
 
@@ -85,7 +97,11 @@ private:
 		time_t now = time(0);
 		localtime_s(&newtime, &now);
 
-		clockedIn[newtime.tm_wday - 1][index](newtime.tm_hour, newtime.tm_min, newtime.tm_sec);
+		// Round minute to nearest 15min
+		int newMin = newtime.tm_min + 15 / 2;
+		newMin -= newMin % 15;
+
+		clockedIn[newtime.tm_wday - 1][index](newtime.tm_hour, newMin);
 	}
 public:
 	void clockIn() { recordTime(0); }
@@ -131,6 +147,14 @@ public:
 					cout << "This employee is not casual. Their schedule must be changed by a manager!\n";
 					return;
 				}
+			}
+		}
+		cout << "No user found with ID: " << ID << endl;
+	}
+	void findSchedule(int ID, vector<User>& users) {
+		for (User u : users) {
+			if (u.getID() == ID) {
+				// Display Schedule
 			}
 		}
 		cout << "No user found with ID: " << ID << endl;
