@@ -280,8 +280,9 @@ public:
         };
         for (int i = 0; i < 7; i++) {
             string temp;
-            cout << "Enter the start and end time in this format for the day " << weekDays[i] << "\nhour:minute hour:minute";
-            cin >> temp;
+            cout << "Enter the start and end time in this format for the day " << weekDays[i] << "\nhour:minute hour:minute\n";
+            getline(cin, temp);
+
             // Validation to ensure correct format
             regex timePattern(R"((\d{1,2}:\d{2}) (\d{1,2}:\d{2}))");
             while (!regex_match(temp, timePattern)) {
@@ -342,7 +343,7 @@ int main() {
     users.push_back(make_shared<DutyManager>(3, "dm_user", "password", false, 90000, "10:00 18:00 10:00 18:00 10:00 18:00 10:00 18:00 10:00 18:00 0:00 0:00 0:00 0:00"));
     users.push_back(make_shared<Manager>(4, "mgr_user", "password", true, 100000, "8:00 16:00 8:00 16:00 8:00 16:00 8:00 16:00 8:00 16:00 0:00 0:00 0:00 0:00"));
 
-    auto currentUser = dynamic_pointer_cast<Manager>(users[3]); // Manager
+    shared_ptr<Manager> currentUser = dynamic_pointer_cast<Manager>(users[3]); // Manager
     currentUser->addEmployee(users);
 
     for (auto& user : users) {
