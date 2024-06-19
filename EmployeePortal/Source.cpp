@@ -6,8 +6,8 @@
 #include <stdexcept>
 #include <map>
 #include <regex>
-
-#include <typeinfo> // remove
+#include <fstream>
+#include <sstream>
 
 using namespace std;
 
@@ -23,6 +23,10 @@ public:
     Time() : hour(0), minute(0) {}
     Time(int hour, int minute) : hour(hour), minute(minute) {}
 
+    string output() {
+        return to_string(hour) + ":" + to_string(minute);
+    }
+
     friend ostream& operator<<(ostream& os, const Time& t) {
         os << t.hour << ":" << t.minute;
         return os;
@@ -36,6 +40,7 @@ public:
 
 class User {
 private:
+    char type;
     int ID, pay;
     string username, password;
     bool permanent;
@@ -43,7 +48,7 @@ private:
     vector<string> alerts;
 public:
     virtual ~User() = default; // Makes the user class a polymorphic type to allow for dynamic_cast
-    User(int id, string user, string pass, bool perm, int Pay, string sched) : ID(id), username(user), password(pass), permanent(perm), pay(Pay) {
+    User(int id, string user, string pass, bool perm, int Pay, string sched, char type) : ID(id), username(user), password(pass), permanent(perm), pay(Pay), type(type) {
         // split sched string into the schedule array
         string tempHour, tempMinute;
         int day = 0, counter = 0;
@@ -93,6 +98,13 @@ public:
             cout << weekDays[i] << " " << schedule[i][0] << " to " << schedule[i][1] << endl;
         }
     }
+    string getScheduleRaw() {
+        string output;
+        for (int i = 0; i < 7; ++i) {
+            output += schedule[i][0].output() + " " + schedule[i][1].output() + " ";
+        }
+        return output;
+    }
     void viewPay() const {
         cout << "Pay: " << pay << endl;
     }
@@ -103,9 +115,11 @@ public:
     }
 
     string getName() { return username; }
+    string getPass() { return password; }
     int getID() { return ID; }
     int getPay() { return pay; }
     bool isPermanent() { return permanent; }
+    char getType() { return type; }
 };
 
 shared_ptr<User> findUserByID(int ID, vector<shared_ptr<User>>& users) {
@@ -132,7 +146,7 @@ private:
         clockedIn[newtime.tm_wday - 1][index].setTime(newtime.tm_hour, newMin);
     }
 public:
-    Employee(int id, string user, string pass, bool perm, int Pay, string sched) : User(id, user, pass, perm, Pay, sched) {}
+    Employee(int id, string user, string pass, bool perm, int Pay, string sched) : User(id, user, pass, perm, Pay, sched, 'E') {}
     void clockIn() { recordTime(0); }
     void clockOut() { recordTime(1); }
 };
@@ -150,7 +164,7 @@ public:
 
 class Accountant : public virtual User, public virtual Administrative {
 public:
-    Accountant(int id, string user, string pass, bool perm, int Pay, string sched) : User(id, user, pass, perm, Pay, sched) {}
+    Accountant(int id, string user, string pass, bool perm, int Pay, string sched) : User(id, user, pass, perm, Pay, sched, 'A') {}
     void findPay(int ID, vector<shared_ptr<User>>& users) {
         shared_ptr<User> user = nullptr;
         try {
@@ -170,7 +184,7 @@ class DutyManager : public virtual User, public virtual Administrative {
 private:
     void x() {} // Helper function - Display Current Schedule, Ask what to change, Change.
 public:
-    DutyManager(int id, string user, string pass, bool perm, int Pay, string sched) : User(id, user, pass, perm, Pay, sched) {}
+    DutyManager(int id, string user, string pass, bool perm, int Pay, string sched) : User(id, user, pass, perm, Pay, sched, 'D') {}
     virtual void changeSchedule(int ID, vector<shared_ptr<User>>& users) {
         try {
             shared_ptr<User> user = findUserByID(ID, users);
@@ -203,7 +217,7 @@ class Manager : public DutyManager, public Accountant {
     // changeSchedule override dont check if casual
     // Add employee
 public:
-    Manager(int id, string user, string pass, bool perm, int Pay, string sched) : DutyManager(id, user, pass, perm, Pay, sched), Accountant(id, user, pass, perm, Pay, sched), User(id, user, pass, perm, Pay, sched) {}
+    Manager(int id, string user, string pass, bool perm, int Pay, string sched) : DutyManager(id, user, pass, perm, Pay, sched), Accountant(id, user, pass, perm, Pay, sched), User(id, user, pass, perm, Pay, sched, 'M') {}
     void changeSchedule(int ID, vector<shared_ptr<User>>& users) override {
         try {
             shared_ptr<User> user = findUserByID(ID, users);
@@ -325,31 +339,87 @@ public:
 };
 
 vector<shared_ptr<User>> loadFromFile() {
-    // FORMAT: type,id,username,password,perm/casual,Pay,clockInTimeMonday clockOutTimeMonday ... clockInTimeSunday clockOutTimeSunday
+    // FORMAT: id,username,password,perm/casual,Pay,clockInTimeMonday clockOutTimeMonday ... clockInTimeSunday clockOutTimeSunday
     // Seperate file for Manager, Employee, ...
-    return {};
+    vector<shared_ptr<User>> users = {};
+    string line;
+    ifstream infile("Users.txt");
+    if (!infile) {
+        cout << "Unable to open Users.txt\n";
+        return users;
+    }
+    while (getline(infile, line)) {
+        stringstream ss(line);
+        string type, idStr, username, password, permStr, payStr, schedule;
+        int id, pay;
+        bool perm;
+
+        // Split input line by commas
+        getline(ss, type, ',');
+        getline(ss, idStr, ',');
+        getline(ss, username, ',');
+        getline(ss, password, ',');
+        getline(ss, permStr, ',');
+        getline(ss, payStr, ',');
+
+        // Read rest of line as schedule
+        getline(ss, schedule);
+
+        // Convert to appropriate types
+        id = stoi(idStr);
+        pay = stoi(payStr);
+        perm = (permStr == "perm");
+
+        // Create shared ptrs and add to vector
+        if (type == "E") {
+            users.push_back(make_shared<Employee>(id, username, password, perm, pay, schedule));
+        }
+        else if (type == "A") {
+            users.push_back(make_shared<Accountant>(id, username, password, perm, pay, schedule));
+        }
+        else if (type == "D") {
+            users.push_back(make_shared<DutyManager>(id, username, password, perm, pay, schedule));
+        }
+        else if (type == "M") {
+            users.push_back(make_shared<Manager>(id, username, password, perm, pay, schedule));
+        }
+        else {
+            cerr << "Unknown user type: " << type << endl;
+        }
+    }
+    return users;
 }
 
 void saveToFile(vector<shared_ptr<User>> users) {
+    ofstream outfile("Users.txt");
+    if (!outfile) {
+        cout << "Unable to open Users.txt\n";
+        return;
+    }
 
+    for (const auto& user : users) {
+        outfile << user->getType() << ",";
+        outfile << user->getID() << ",";
+        outfile << user->getName() << ",";
+        outfile << user->getPass() << ",";
+        outfile << (user->isPermanent() ? "perm" : "casual") << ",";
+        outfile << user->getPay() << ",";
+        outfile << user->getScheduleRaw() << "\n";
+    }
 }
 
 int main() {
     vector<shared_ptr<User>> users = loadFromFile();
 
     // Examples
-    users.push_back(make_shared<Employee>(1, "emp_user", "password", false, 70000, "9:00 17:00 9:00 17:00 0:00 0:00 0:00 0:00 0:00 0:00 17:00 1:00 17:00 1:00"));
-    users.push_back(make_shared<Accountant>(2, "acc_user", "password", true, 80000, "9:00 17:00 9:00 17:00 9:00 17:00 9:00 17:00 9:00 17:00 0:00 0:00 0:00 0:00"));
-    users.push_back(make_shared<DutyManager>(3, "dm_user", "password", false, 90000, "10:00 18:00 10:00 18:00 10:00 18:00 10:00 18:00 10:00 18:00 0:00 0:00 0:00 0:00"));
-    users.push_back(make_shared<Manager>(4, "mgr_user", "password", true, 100000, "8:00 16:00 8:00 16:00 8:00 16:00 8:00 16:00 8:00 16:00 0:00 0:00 0:00 0:00"));
-
-    shared_ptr<Manager> currentUser = dynamic_pointer_cast<Manager>(users[3]); // Manager
-    currentUser->addEmployee(users);
+    //shared_ptr<Manager> currentUser = dynamic_pointer_cast<Manager>(users[3]); // Manager
+    //currentUser->addEmployee(users);
 
     for (auto& user : users) {
-        cout << user->getName() << endl; 
-        user->viewSchedule();
+        cout << user->getName() << " | " << user->getType() << endl;
     }
+
+    saveToFile(users);
 
     return 0;
 }
