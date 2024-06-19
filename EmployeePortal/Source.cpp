@@ -81,9 +81,6 @@ public:
             schedule[day][counter] = t;
         }
     }
-    bool login(string user, string pass) const {
-        return user == username && pass == password;
-    }
     void viewSchedule() {
         map<int, string> weekDays{
             {0, "Monday" },
@@ -181,8 +178,6 @@ public:
 
 class DutyManager : public virtual User, public virtual Administrative {
     // changeSchedule check if casual
-private:
-    void x() {} // Helper function - Display Current Schedule, Ask what to change, Change.
 public:
     DutyManager(int id, string user, string pass, bool perm, int Pay, string sched) : User(id, user, pass, perm, Pay, sched, 'D') {}
     virtual void changeSchedule(int ID, vector<shared_ptr<User>>& users) {
@@ -215,7 +210,6 @@ public:
 
 class Manager : public DutyManager, public Accountant {
     // changeSchedule override dont check if casual
-    // Add employee
 public:
     Manager(int id, string user, string pass, bool perm, int Pay, string sched) : DutyManager(id, user, pass, perm, Pay, sched), Accountant(id, user, pass, perm, Pay, sched), User(id, user, pass, perm, Pay, sched, 'M') {}
     void changeSchedule(int ID, vector<shared_ptr<User>>& users) override {
@@ -339,8 +333,7 @@ public:
 };
 
 vector<shared_ptr<User>> loadFromFile() {
-    // FORMAT: id,username,password,perm/casual,Pay,clockInTimeMonday clockOutTimeMonday ... clockInTimeSunday clockOutTimeSunday
-    // Seperate file for Manager, Employee, ...
+    // FORMAT: type,id,username,password,perm/casual,Pay,clockInTimeMonday clockOutTimeMonday ... clockInTimeSunday clockOutTimeSunday
     vector<shared_ptr<User>> users = {};
     string line;
     ifstream infile("Users.txt");
@@ -408,18 +401,260 @@ void saveToFile(vector<shared_ptr<User>> users) {
     }
 }
 
+void employeeMenu(shared_ptr<Employee> user) {
+    while (true) {
+        cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) View Alerts\n4) Clock In\n5) Clock Out\n6) Logout\n";
+        int input;
+        cin >> input;
+        // Validate Input
+
+        switch (input) {
+        case 1: {
+            user->viewSchedule();
+            break;
+        }
+        case 2: {
+            user->viewPay();
+            break;
+        }
+        case 3: {
+            user->viewAlerts();
+            // Ask if they want to clear
+            break;
+        }
+        case 4: {
+            // Verify that they haven't already clocked in
+            user->clockIn();
+            break;
+        }
+        case 5: {
+            // Verify that they have clocked in and they havent already clocked out
+            user->clockOut();
+            break;
+        }
+        case 6: {
+            return;
+        }
+        }
+    }
+}
+void accountantMenu(shared_ptr<Accountant> user, vector<shared_ptr<User>> users) {
+    while (true) {
+        cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) View Alerts\n4) Search Employee By Name\n5) Find Employee Current Pay\n6) Logout\n";
+        int input;
+        cin >> input;
+        // Validate Input
+
+        switch (input) {
+        case 1: {
+            user->viewSchedule();
+            break;
+        }
+        case 2: {
+            user->viewPay();
+            break;
+        }
+        case 3: {
+            user->viewAlerts();
+            // Ask if they want to clear
+            break;
+        }
+        case 4: {
+            cout << "Enter the name you would like to search for: ";
+            string name;
+            cin.ignore();
+            getline(cin, name);
+            user->searchByName(name, users);
+            break;
+        }
+        case 5: {
+            cout << "Enter the ID of the use you want to search for: ";
+            int ID;
+            cin >> ID;
+            // Validate input
+
+            user->findPay(ID, users);
+            break;
+        }
+        case 6: {
+            return;
+        }
+        }
+    }
+}
+void dutyManagerMenu(shared_ptr<DutyManager> user, vector<shared_ptr<User>> users) {
+    while (true) {
+        cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) View Alerts\n4) Search Employee By Name\n5) Change Schedule\n6) Find Schedule\n7) Logout\n";
+        int input;
+        cin >> input;
+        // Validate Input
+
+        switch (input) {
+        case 1: {
+            user->viewSchedule();
+            break;
+        }
+        case 2: {
+            user->viewPay();
+            break;
+        }
+        case 3: {
+            user->viewAlerts();
+            // Ask if they want to clear
+            break;
+        }
+        case 4: {
+            cout << "Enter the name you would like to search for: ";
+            string name;
+            cin.ignore();
+            getline(cin, name);
+            user->searchByName(name, users);
+            break;
+        }
+        case 5: {
+            cout << "Enter the ID of the user that is to have their schedule changed: ";
+            int ID;
+            cin >> ID;
+            // Validate input
+
+            user->changeSchedule(ID, users);
+            break;
+        }
+        case 6: {
+            cout << "Enter the ID of the user you want to find the schedule of: ";
+            int ID;
+            cin >> ID;
+            // Validate input
+
+            user->findSchedule(ID, users);
+            break;
+        }
+        case 7: {
+            return;
+        }
+        }
+    }
+}
+void managerMenu(shared_ptr<Manager> user, vector<shared_ptr<User>> users) {
+    while (true) {
+        cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) View Alerts\n4) Search Employee By Name\n5) Find Employee Current Pay\n6) Change Schedule\n7) Find Schedule\n8) Add Employee\n9) Close Program\n10) Logout\n";
+        int input;
+        cin >> input;
+        // Validate Input
+
+        switch (input) {
+        case 1: {
+            user->viewSchedule();
+            break;
+        }
+        case 2: {
+            user->viewPay();
+            break;
+        }
+        case 3: {
+            user->viewAlerts();
+            // Ask if they want to clear
+            break;
+        }
+        case 4: {
+            cout << "Enter the name you would like to search for: ";
+            string name;
+            cin.ignore();
+            getline(cin, name);
+            user->searchByName(name, users);
+            break;
+        }
+        case 5: {
+            cout << "Enter the ID of the use you want to search for: ";
+            int ID;
+            cin >> ID;
+            // Validate input
+
+            user->findPay(ID, users);
+            break;
+        }
+        case 6: {
+            cout << "Enter the ID of the user that is to have their schedule changed: ";
+            int ID;
+            cin >> ID;
+            // Validate input
+
+            user->changeSchedule(ID, users);
+            break;
+        }
+        case 7: {
+            cout << "Enter the ID of the user you want to find the schedule of: ";
+            int ID;
+            cin >> ID;
+            // Validate input
+
+            user->findSchedule(ID, users);
+            break;
+        }
+        case 8: {
+            user->addEmployee(users);
+        }
+        case 9: {
+            saveToFile(users);
+            exit(0);
+        }
+        case 10: {
+            return;
+        }
+        }
+    }
+}
+
 int main() {
     vector<shared_ptr<User>> users = loadFromFile();
+    // Error check if empty
+    // If empty create manager and alert user
 
-    // Examples
-    //shared_ptr<Manager> currentUser = dynamic_pointer_cast<Manager>(users[3]); // Manager
-    //currentUser->addEmployee(users);
+    while (true) {
+        cout << "-==== LOGIN ====-\nStart by entering your Employee ID: ";
+        int ID;
+        cin >> ID;
+        // Validate input
 
-    for (auto& user : users) {
-        cout << user->getName() << " | " << user->getType() << endl;
+        shared_ptr<User> currentUser = nullptr;
+        try {
+            currentUser = findUserByID(ID, users);
+        } catch (invalidUser& e) {
+            cout << "Error: " << e.what() << endl;
+            currentUser = nullptr;
+            continue;
+        }
+
+        cout << "Password: ";
+        string pass;
+        cin.ignore();
+        getline(cin, pass);
+        if (pass != currentUser->getPass()) {
+            cout << "Invalid Password!\n";
+            currentUser = nullptr;
+            continue;
+        }
+
+        // Login is successful
+        cout << "Welcome " << currentUser->getName() << endl;
+        // dynamic cast currentUser and go to function associated with class
+        switch (currentUser->getType()) {
+        case 'E': {
+            employeeMenu(dynamic_pointer_cast<Employee>(currentUser));
+            break;
+        }
+        case 'A': {
+            accountantMenu(dynamic_pointer_cast<Accountant>(currentUser), users);
+            break;
+        }
+        case 'D': {
+            dutyManagerMenu(dynamic_pointer_cast<DutyManager>(currentUser), users);
+            break;
+        }
+        case 'M': {
+            managerMenu(dynamic_pointer_cast<Manager>(currentUser), users);
+            break;
+        }
+        }
     }
-
-    saveToFile(users);
-
-    return 0;
 }
