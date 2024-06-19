@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <stdexcept>
+#include <map>
 
 using namespace std;
 
@@ -16,11 +17,11 @@ class Time {
 private:
     int hour, minute;
 public:
-    Time() : hour(-1), minute(-1) {}
+    Time() : hour(0), minute(0) {}
     Time(int hour, int minute) : hour(hour), minute(minute) {}
 
     friend ostream& operator<<(ostream& os, const Time& t) {
-        os << (t.hour < 10 ? "0" : "") << t.hour << ":" << (t.minute < 10 ? "0" : "") << t.minute;
+        os << t.hour << ":" << t.minute;
         return os;
     }
 
@@ -37,11 +38,6 @@ private:
     bool permanent;
     Time schedule[7][2]; // 7 Days per Week | [Clock In Time, Clock Out Time]
     vector<string> alerts;
-    void showSchedule(shared_ptr<User> user) {
-        for (int i = 0; i < 7; i++) {
-            cout << "In: " << user->schedule[i][0] << " | Out: " << user->schedule[i][1] << endl;
-        }
-    }
 public:
     User(int id, string user, string pass, bool perm, int Pay, string sched) : ID(id), username(user), password(pass), permanent(perm), pay(Pay) {
         // split sched string into the schedule array
@@ -70,13 +66,27 @@ public:
                 tempMinute += c;
             }
         }
+        // Handle the last Time object
+        if (!tempMinute.empty()) {
+            Time t(stoi(tempHour), stoi(tempMinute));
+            schedule[day][counter] = t;
+        }
     }
     bool login(string user, string pass) const {
         return user == username && pass == password;
     }
     void viewSchedule() const {
+        map<int, string> weekDays{
+            {0, "Monday" },
+            {1, "Tuesday" },
+            {2, "Wednesday" },
+            {3, "Thursday" },
+            {4, "Friday" },
+            {5, "Saturday" },
+            {6, "Sunday" }
+        };
         for (int i = 0; i < 7; ++i) {
-            cout << "Day " << i + 1 << ": In: " << schedule[i][0] << " | Out: " << schedule[i][1] << endl;
+            cout << weekDays[i] << " " << schedule[i][0] << " to " << schedule[i][1] << endl;
         }
     }
     void viewPay() const {
@@ -173,15 +183,14 @@ public:
         }
     }
     void findSchedule(int ID, vector<shared_ptr<User>>& users) {
-        shared_ptr<User> user = nullptr;
         try {
-            user = findUserByID(ID, users);
+            shared_ptr<User> user = findUserByID(ID, users);
+            // Display schedule
         }
         catch (invalidUser& e) {
             cout << "Error: " << e.what() << endl;
             return;
         }
-        // Display schedule
     }
 };
 
@@ -201,7 +210,7 @@ public:
         }
     }
     void addEmployee(vector<shared_ptr<User>>& users) {
-
+        // Add functionality
     }
 };
 
@@ -211,15 +220,24 @@ vector<shared_ptr<User>> loadFromFile() {
     return {};
 }
 
+void saveToFile(vector<shared_ptr<User>> users) {
+
+}
+
 int main() {
     vector<shared_ptr<User>> users = loadFromFile();
     shared_ptr<User> currentUser = nullptr;
 
     // Examples
-    users.push_back(make_shared<Employee>(1, "emp_user", "password", false, 70000, "9:00 17:00 9:00 17:00 0:00 0:00 0:00 0:00 0:00 0:00 0:00 0:00 0:00 0:00"));
+    users.push_back(make_shared<Employee>(1, "emp_user", "password", false, 70000, "9:00 17:00 9:00 17:00 0:00 0:00 0:00 0:00 0:00 0:00 17:00 1:00 17:00 1:00"));
     users.push_back(make_shared<Accountant>(2, "acc_user", "password", true, 80000, "9:00 17:00 9:00 17:00 9:00 17:00 9:00 17:00 9:00 17:00 0:00 0:00 0:00 0:00"));
     users.push_back(make_shared<DutyManager>(3, "dm_user", "password", false, 90000, "10:00 18:00 10:00 18:00 10:00 18:00 10:00 18:00 10:00 18:00 0:00 0:00 0:00 0:00"));
     users.push_back(make_shared<Manager>(4, "mgr_user", "password", true, 100000, "8:00 16:00 8:00 16:00 8:00 16:00 8:00 16:00 8:00 16:00 0:00 0:00 0:00 0:00"));
+
+    for (auto& user : users) {
+        cout << user->getName() << endl; 
+        user->viewSchedule();
+    }
 
     return 0;
 }
