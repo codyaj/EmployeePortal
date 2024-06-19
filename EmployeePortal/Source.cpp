@@ -2,228 +2,224 @@
 #include <string>
 #include <ctime>
 #include <vector>
-
+#include <memory>
+#include <stdexcept>
 
 using namespace std;
 
-
-class invalidUser : public exception {
-private:
-	string message;
+class invalidUser : public runtime_error {
 public:
-	invalidUser(string msg) : message(msg) {}
-	const char* what() const throw() {
-		return message.c_str();
-	}
+    invalidUser(string msg) : runtime_error(msg) {}
 };
 
 class Time {
 private:
-	int hour, minute;
+    int hour, minute;
 public:
-	Time() : hour(-1), minute(-1) {}
-	Time(int hour, int minute) {
-		this->hour = hour;
-		this->minute = minute;
-	}
-	friend std::ostream& operator<<(std::ostream& os, Time& t);
-	void operator()(int hour, int minute) {
-		this->hour = hour;
-		this->minute = minute;
-	}
-};
+    Time() : hour(-1), minute(-1) {}
+    Time(int hour, int minute) : hour(hour), minute(minute) {}
 
-std::ostream& operator<<(std::ostream& os, Time& t) {
-	os << t.hour << ":" << t.minute;
-	return os;
-}
+    friend ostream& operator<<(ostream& os, const Time& t) {
+        os << (t.hour < 10 ? "0" : "") << t.hour << ":" << (t.minute < 10 ? "0" : "") << t.minute;
+        return os;
+    }
+
+    void setTime(int hour, int minute) {
+        this->hour = hour;
+        this->minute = minute;
+    }
+};
 
 class User {
 private:
-	int ID, pay;
-	string username, password;
-	bool permanent;
-	Time schedule[7][2]; // 7 Days per Week | [Clock In Time, Clock Out Time]
-	vector<string> alerts;
-	void showSchedule(User* user) {
-		for (int i = 0; i < 7; i++) {
-			cout << "In: " << user->schedule[i][0] << " | Out: " << user->schedule[i][1] << endl;
-		}
-	}
+    int ID, pay;
+    string username, password;
+    bool permanent;
+    Time schedule[7][2]; // 7 Days per Week | [Clock In Time, Clock Out Time]
+    vector<string> alerts;
+    void showSchedule(shared_ptr<User> user) {
+        for (int i = 0; i < 7; i++) {
+            cout << "In: " << user->schedule[i][0] << " | Out: " << user->schedule[i][1] << endl;
+        }
+    }
 public:
-	User(int id, string user, string pass, bool perm, int Pay, string sched) : ID(id), username(user), password(pass), permanent(perm), pay(Pay) {
-		// split sched string into the schedule array
-		string tempHour, tempMinute;
-		int day = 0, counter = 0;
-		for (char c : sched) {
-			if (c == ' ') {
-				Time t(stoi(tempHour), stoi(tempMinute));
-				tempHour = "";
-				tempMinute = "";
+    User(int id, string user, string pass, bool perm, int Pay, string sched) : ID(id), username(user), password(pass), permanent(perm), pay(Pay) {
+        // split sched string into the schedule array
+        string tempHour, tempMinute;
+        int day = 0, counter = 0;
+        for (char c : sched) {
+            if (c == ' ') {
+                Time t(stoi(tempHour), stoi(tempMinute));
+                tempHour = "";
+                tempMinute = "";
 
-				schedule[day][counter] = t;
-				if (counter == 0) {
-					counter += 1;
-				}
-				else {
-					counter = 0;
-					day += 1;
-				}
-			}
-			else if (c == ':') {
-				tempHour = tempMinute;
-				tempMinute = "";
-			}
-			else {
-				tempMinute += c;
-			}
-		}
-	}
-	bool login(string user, string pass) {
-		if (user == username && pass == password) {
-			return true;
-		}
-		return false;
-	}
-	void viewSchedule() {
+                schedule[day][counter] = t;
+                if (counter == 0) {
+                    counter += 1;
+                }
+                else {
+                    counter = 0;
+                    day += 1;
+                }
+            }
+            else if (c == ':') {
+                tempHour = tempMinute;
+                tempMinute = "";
+            }
+            else {
+                tempMinute += c;
+            }
+        }
+    }
+    bool login(string user, string pass) const {
+        return user == username && pass == password;
+    }
+    void viewSchedule() const {
+        for (int i = 0; i < 7; ++i) {
+            cout << "Day " << i + 1 << ": In: " << schedule[i][0] << " | Out: " << schedule[i][1] << endl;
+        }
+    }
+    void viewPay() const {
+        cout << "Pay: " << pay << endl;
+    }
+    void viewAlerts() const {
+        for (const auto& alert : alerts) {
+            cout << alert << endl;
+        }
+    }
 
-	}
-	void viewPay() {
-
-	}
-	void viewAlerts() {
-
-	}
-
-	string getName() { return username; }
-	int getID() { return ID; }
-	int getPay() { return pay; }
-	bool isPermanent() { return permanent; }
+    string getName() { return username; }
+    int getID() { return ID; }
+    int getPay() { return pay; }
+    bool isPermanent() { return permanent; }
 };
 
-User* findUserByID(int ID, vector<unique_ptr<User>>& users); // Function prototype
+shared_ptr<User> findUserByID(int ID, vector<shared_ptr<User>>& users) {
+    for (auto& u : users) {
+        if (u->getID() == ID) {
+            return u;
+        }
+    }
+    throw invalidUser("User not found");
+}
 
 class Employee : public User {
 private:
-	Time clockedIn[7][2];
-	void recordTime(int index) {
-		struct tm newtime;
-		time_t now = time(0);
-		localtime_s(&newtime, &now);
+    Time clockedIn[7][2];
+    void recordTime(int index) {
+        struct tm newtime;
+        time_t now = time(0);
+        localtime_s(&newtime, &now);
 
-		// Round minute to nearest 15min
-		int newMin = newtime.tm_min + 15 / 2;
-		newMin -= newMin % 15;
+        // Round minute to nearest 15min
+        int newMin = newtime.tm_min + 15 / 2;
+        newMin -= newMin % 15;
 
-		clockedIn[newtime.tm_wday - 1][index](newtime.tm_hour, newMin);
-	}
+        clockedIn[newtime.tm_wday - 1][index].setTime(newtime.tm_hour, newMin);
+    }
 public:
-	Employee(int id, string user, string pass, bool perm, int Pay, string sched) : User(id, user, pass, perm, Pay, sched) {}
-	void clockIn() { recordTime(0); }
-	void clockOut() { recordTime(1); }
+    Employee(int id, string user, string pass, bool perm, int Pay, string sched) : User(id, user, pass, perm, Pay, sched) {}
+    void clockIn() { recordTime(0); }
+    void clockOut() { recordTime(1); }
 };
 
 class Administrative {
 public:
-	void searchByName(string name, vector<unique_ptr<User>>& users) {
-		for (auto& u : users) {
-			if (u->getName().find(name) != string::npos) {
-				cout << "Possible Match: " << u->getName() << " | ID: " << u->getID() << endl;;
-			}
-		}
-	}
+    void searchByName(string name, vector<shared_ptr<User>>& users) {
+        for (auto& u : users) {
+            if (u->getName().find(name) != string::npos) {
+                cout << "Possible Match: " << u->getName() << " | ID: " << u->getID() << endl;
+            }
+        }
+    }
 };
 
 class Accountant : public virtual User, public virtual Administrative {
 public:
-	Accountant(int id, string user, string pass, bool perm, int Pay, string sched) : User(id, user, pass, perm, Pay, sched) {}
-	void findPay(int ID, vector<unique_ptr<User>>& users) {
-		User* user = nullptr;
-		try {
-			user = findUserByID(ID, users);
-		}
-		catch (invalidUser& e) {
-			cout << "Error: " << e.what() << endl;
-			return;
-		}
+    Accountant(int id, string user, string pass, bool perm, int Pay, string sched) : User(id, user, pass, perm, Pay, sched) {}
+    void findPay(int ID, vector<shared_ptr<User>>& users) {
+        shared_ptr<User> user = nullptr;
+        try {
+            user = findUserByID(ID, users);
+        }
+        catch (invalidUser& e) {
+            cout << "Error: " << e.what() << endl;
+            return;
+        }
 
-		cout << "ID: " << user->getID() << "\nName: " << user->getName() << "\nPay: " << user->getPay() << endl;
-	}
+        cout << "ID: " << user->getID() << "\nName: " << user->getName() << "\nPay: " << user->getPay() << endl;
+    }
 };
 
 class DutyManager : public virtual User, public virtual Administrative {
-	// changeSchedule check if casual
+    // changeSchedule check if casual
 private:
-	void x() {} // Helper function - Display Current Schedule, Ask what to change, Change.
+    void x() {} // Helper function - Display Current Schedule, Ask what to change, Change.
 public:
-	DutyManager(int id, string user, string pass, bool perm, int Pay, string sched) : User(id, user, pass, perm, Pay, sched) {}
-	virtual void changeSchedule(int ID, vector<unique_ptr<User>>& users) {
-		User* user = nullptr;
-		try {
-			user = findUserByID(ID, users);
-		}
-		catch (invalidUser& e) {
-			cout << "Error: " << e.what() << endl;
-			return;
-		}
-
-		if (!user->isPermanent()) {
-			// Change schedule
-		}
-		else {
-			cout << "This employee is not casual. Their schedule must be changed by a manager!\n";
-			return;
-		}
-	}
-	void findSchedule(int ID, vector<unique_ptr<User>>& users) {
-		User* user = nullptr;
-		try {
-			user = findUserByID(ID, users);
-		}
-		catch (invalidUser& e) {
-			cout << "Error: " << e.what() << endl;
-			return;
-		}
-		// Display schedule
-	}
+    DutyManager(int id, string user, string pass, bool perm, int Pay, string sched) : User(id, user, pass, perm, Pay, sched) {}
+    virtual void changeSchedule(int ID, vector<shared_ptr<User>>& users) {
+        try {
+            shared_ptr<User> user = findUserByID(ID, users);
+            if (!user->isPermanent()) {
+                // Change schedule
+            }
+            else {
+                cout << "This employee is not casual. Their schedule must be changed by a manager!\n";
+                return;
+            }
+        }
+        catch (const invalidUser& e) {
+            cout << "Error: " << e.what() << endl;
+        }
+    }
+    void findSchedule(int ID, vector<shared_ptr<User>>& users) {
+        shared_ptr<User> user = nullptr;
+        try {
+            user = findUserByID(ID, users);
+        }
+        catch (invalidUser& e) {
+            cout << "Error: " << e.what() << endl;
+            return;
+        }
+        // Display schedule
+    }
 };
 
 class Manager : public DutyManager, public Accountant {
-	// changeSchedule override dont check if casual
-	// Add employee
+    // changeSchedule override dont check if casual
+    // Add employee
 public:
-	Manager(int id, string user, string pass, bool perm, int Pay, string sched) : DutyManager(id, user, pass, perm, Pay, sched), Accountant(id, user, pass, perm, Pay, sched), User(id, user, pass, perm, Pay, sched) {}
-	void changeSchedule(int ID, vector<unique_ptr<User>>& users) override {
-		User* user = nullptr;
-		try {
-			user = findUserByID(ID, users);
-		}
-		catch (invalidUser& e) {
-			cout << "Error: " << e.what() << endl;
-			return;
-		}
-		// Change schedule
-	}
-	void addEmployee(vector<unique_ptr<User>>& users) {
+    Manager(int id, string user, string pass, bool perm, int Pay, string sched) : DutyManager(id, user, pass, perm, Pay, sched), Accountant(id, user, pass, perm, Pay, sched), User(id, user, pass, perm, Pay, sched) {}
+    void changeSchedule(int ID, vector<shared_ptr<User>>& users) override {
+        try {
+            shared_ptr<User> user = findUserByID(ID, users);
+            // Change schedule
+        }
+        catch (invalidUser& e) {
+            cout << "Error: " << e.what() << endl;
+            return;
+        }
+    }
+    void addEmployee(vector<shared_ptr<User>>& users) {
 
-	}
+    }
 };
 
-vector<unique_ptr<User>> loadFromFile() {
-	// FORMAT: type,id,username,password,perm/casual,Pay,clockInTimeMonday clockOutTimeMonday ... clockInTimeSunday clockOutTimeSunday
-	// Seperate file for Manager, Employee, ...
-	return {};
+vector<shared_ptr<User>> loadFromFile() {
+    // FORMAT: type,id,username,password,perm/casual,Pay,clockInTimeMonday clockOutTimeMonday ... clockInTimeSunday clockOutTimeSunday
+    // Seperate file for Manager, Employee, ...
+    return {};
 }
 
 int main() {
-	vector<unique_ptr<User>> users = loadFromFile();
-	User* currentUser = nullptr;
+    vector<shared_ptr<User>> users = loadFromFile();
+    shared_ptr<User> currentUser = nullptr;
 
-	// Examples
-	users.push_back(make_unique<Employee>(1, "emp_user", "password", false, 70000, "9:00 17:00 9:00 17:00 0:00 0:00 0:00 0:00 0:00 0:00 0:00 0:00 0:00 0:00"));
-	users.push_back(make_unique<Accountant>(2, "acc_user", "password", true, 80000, "9:00 17:00 9:00 17:00 9:00 17:00 9:00 17:00 9:00 17:00 0:00 0:00 0:00 0:00"));
-	users.push_back(make_unique<DutyManager>(3, "dm_user", "password", false, 90000, "10:00 18:00 10:00 18:00 10:00 18:00 10:00 18:00 10:00 18:00 0:00 0:00 0:00 0:00"));
-	users.push_back(make_unique<Manager>(4, "mgr_user", "password", true, 100000, "8:00 16:00 8:00 16:00 8:00 16:00 8:00 16:00 8:00 16:00 0:00 0:00 0:00 0:00"));
+    // Examples
+    users.push_back(make_shared<Employee>(1, "emp_user", "password", false, 70000, "9:00 17:00 9:00 17:00 0:00 0:00 0:00 0:00 0:00 0:00 0:00 0:00 0:00 0:00"));
+    users.push_back(make_shared<Accountant>(2, "acc_user", "password", true, 80000, "9:00 17:00 9:00 17:00 9:00 17:00 9:00 17:00 9:00 17:00 0:00 0:00 0:00 0:00"));
+    users.push_back(make_shared<DutyManager>(3, "dm_user", "password", false, 90000, "10:00 18:00 10:00 18:00 10:00 18:00 10:00 18:00 10:00 18:00 0:00 0:00 0:00 0:00"));
+    users.push_back(make_shared<Manager>(4, "mgr_user", "password", true, 100000, "8:00 16:00 8:00 16:00 8:00 16:00 8:00 16:00 8:00 16:00 0:00 0:00 0:00 0:00"));
 
-	return 0;
+    return 0;
 }
