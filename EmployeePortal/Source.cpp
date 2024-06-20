@@ -128,6 +128,24 @@ shared_ptr<User> findUserByID(int ID, vector<shared_ptr<User>>& users) {
     throw invalidUser("User not found");
 }
 
+template <class T>
+T validateNumericalInput(string text) {
+    T num;
+    while (true) {
+        cout << text;
+        cin >> num;
+
+        if (cin.fail()) {
+            cin.clear(); // Clear error flags
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Discard input
+            cout << "Invalid input. Please enter a valid number.\n";
+        }
+        else {
+            return num;
+        }
+    }
+}
+
 class Employee : public User {
 private:
     Time clockedIn[7][2];
@@ -226,13 +244,7 @@ public:
     }
     void addEmployee(vector<shared_ptr<User>>& users) {
         // Get ID
-        int ID;
-        cout << "Enter the desired ID for the user: ";
-        while (!(cin >> ID) || ID <= 0) {
-            cout << "Invalid input. Please enter a positive integer for the ID: ";
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        }
+        int ID = validateNumericalInput<int>("Enter the desired ID for the user: ");
 
         // Check if ID taken
         for (auto& user : users) {
@@ -267,13 +279,8 @@ public:
         perm = (tempVal == 'P');
         
         // Get Pay
-        int payRate;
-        cout << "What " << ((perm) ? "yearly" : "hourly") << " salary is this user on: ";
-        while (!(cin >> payRate) || payRate <= 0) {
-            cout << "Invalid input. Please enter a positive integer for the pay rate: ";
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        }
+        string outputStr = "What " + string((perm) ? "yearly" : "hourly") + " salary is this user on: ";
+        int payRate = validateNumericalInput<int>(outputStr);
 
         // Get schedule
         string schedule = "";
@@ -404,9 +411,7 @@ void saveToFile(vector<shared_ptr<User>> users) {
 void employeeMenu(shared_ptr<Employee> user) {
     while (true) {
         cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) View Alerts\n4) Clock In\n5) Clock Out\n6) Logout\n";
-        int input;
-        cin >> input;
-        // Validate Input
+        int input = validateNumericalInput<int>("");
 
         switch (input) {
         case 1: {
@@ -441,9 +446,7 @@ void employeeMenu(shared_ptr<Employee> user) {
 void accountantMenu(shared_ptr<Accountant> user, vector<shared_ptr<User>> users) {
     while (true) {
         cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) View Alerts\n4) Search Employee By Name\n5) Find Employee Current Pay\n6) Logout\n";
-        int input;
-        cin >> input;
-        // Validate Input
+        int input = validateNumericalInput<int>("");
 
         switch (input) {
         case 1: {
@@ -468,10 +471,7 @@ void accountantMenu(shared_ptr<Accountant> user, vector<shared_ptr<User>> users)
             break;
         }
         case 5: {
-            cout << "Enter the ID of the use you want to search for: ";
-            int ID;
-            cin >> ID;
-            // Validate input
+            int ID = validateNumericalInput<int>("Enter the ID of the use you want to search for: ");
 
             user->findPay(ID, users);
             break;
@@ -485,9 +485,7 @@ void accountantMenu(shared_ptr<Accountant> user, vector<shared_ptr<User>> users)
 void dutyManagerMenu(shared_ptr<DutyManager> user, vector<shared_ptr<User>> users) {
     while (true) {
         cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) View Alerts\n4) Search Employee By Name\n5) Change Schedule\n6) Find Schedule\n7) Logout\n";
-        int input;
-        cin >> input;
-        // Validate Input
+        int input = validateNumericalInput<int>("");
 
         switch (input) {
         case 1: {
@@ -512,19 +510,13 @@ void dutyManagerMenu(shared_ptr<DutyManager> user, vector<shared_ptr<User>> user
             break;
         }
         case 5: {
-            cout << "Enter the ID of the user that is to have their schedule changed: ";
-            int ID;
-            cin >> ID;
-            // Validate input
+            int ID = validateNumericalInput<int>("Enter the ID of the user that is to have their schedule changed: ");
 
             user->changeSchedule(ID, users);
             break;
         }
         case 6: {
-            cout << "Enter the ID of the user you want to find the schedule of: ";
-            int ID;
-            cin >> ID;
-            // Validate input
+            int ID = validateNumericalInput<int>("Enter the ID of the user you want to find the schedule of: ");
 
             user->findSchedule(ID, users);
             break;
@@ -538,9 +530,7 @@ void dutyManagerMenu(shared_ptr<DutyManager> user, vector<shared_ptr<User>> user
 void managerMenu(shared_ptr<Manager> user, vector<shared_ptr<User>> users) {
     while (true) {
         cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) View Alerts\n4) Search Employee By Name\n5) Find Employee Current Pay\n6) Change Schedule\n7) Find Schedule\n8) Add Employee\n9) Close Program\n10) Logout\n";
-        int input;
-        cin >> input;
-        // Validate Input
+        int input = validateNumericalInput<int>("");
 
         switch (input) {
         case 1: {
@@ -565,28 +555,19 @@ void managerMenu(shared_ptr<Manager> user, vector<shared_ptr<User>> users) {
             break;
         }
         case 5: {
-            cout << "Enter the ID of the use you want to search for: ";
-            int ID;
-            cin >> ID;
-            // Validate input
+            int ID = validateNumericalInput<int>("Enter the ID of the use you want to search for: ");
 
             user->findPay(ID, users);
             break;
         }
         case 6: {
-            cout << "Enter the ID of the user that is to have their schedule changed: ";
-            int ID;
-            cin >> ID;
-            // Validate input
+            int ID = validateNumericalInput<int>("Enter the ID of the user that is to have their schedule changed: ");
 
             user->changeSchedule(ID, users);
             break;
         }
         case 7: {
-            cout << "Enter the ID of the user you want to find the schedule of: ";
-            int ID;
-            cin >> ID;
-            // Validate input
+            int ID = validateNumericalInput<int>("Enter the ID of the user you want to find the schedule of: ");
 
             user->findSchedule(ID, users);
             break;
@@ -612,9 +593,7 @@ int main() {
 
     while (true) {
         cout << "-==== LOGIN ====-\nStart by entering your Employee ID: ";
-        int ID;
-        cin >> ID;
-        // Validate input
+        int ID = validateNumericalInput<int>("");
 
         shared_ptr<User> currentUser = nullptr;
         try {
