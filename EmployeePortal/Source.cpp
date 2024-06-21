@@ -484,7 +484,7 @@ void employeeMenu(shared_ptr<Employee> user) {
             time_t now = time(0);
             localtime_s(&newtime, &now);
             if (user->getClockTime(newtime.tm_wday - 1, 0).isSet()) {
-                cout << "You must be already clocked in!\n";
+                cout << "You are already clocked in!\n";
                 break;
             }
 
@@ -496,8 +496,12 @@ void employeeMenu(shared_ptr<Employee> user) {
             struct tm newtime;
             time_t now = time(0);
             localtime_s(&newtime, &now);
-            if (user->getClockTime(newtime.tm_wday - 1, 0).isSet() && !user->getClockTime(newtime.tm_wday - 1, 1).isSet()) {
-                cout << "You must be already clocked in and not yet clocked out!\n";
+            if (!user->getClockTime(newtime.tm_wday - 1, 0).isSet()) {
+                cout << "You must be already clocked in!\n";
+                break;
+            }
+            if (user->getClockTime(newtime.tm_wday - 1, 1).isSet()) {
+                cout << "You musn't be clocked out already!\n";
                 break;
             }
 
