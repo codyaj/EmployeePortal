@@ -36,6 +36,10 @@ public:
         this->hour = hour;
         this->minute = minute;
     }
+
+    bool operator>(const Time& t) {
+        return (this->hour > t.hour || (this->hour == t.hour && this->minute > t.minute));
+    }
 };
 
 class User {
@@ -102,6 +106,9 @@ public:
         }
         return output;
     }
+    Time getScheduleTime(int day, int index) {
+        return schedule[day][index];
+    }
     void viewPay() const {
         cout << "Pay: " << pay << endl;
     }
@@ -159,6 +166,9 @@ public:
     Employee(int id, string user, string pass, bool perm, int Pay, string sched) : User(id, user, pass, perm, Pay, sched, 'E') {}
     void clockIn() { recordTime(0); }
     void clockOut() { recordTime(1); }
+    Time getClockTime(int day, int index) {
+        return clockedIn[day][index];
+    }
 };
 
 class Administrative {
@@ -168,6 +178,52 @@ public:
             if (u->getName().find(name) != string::npos) {
                 cout << "Possible Match: " << u->getName() << " | ID: " << u->getID() << endl;
             }
+        }
+    }
+    void seeIfHere(int ID, vector<shared_ptr<User>>& users) {
+        shared_ptr<User> user = nullptr;
+        try {
+            user = findUserByID(ID, users);
+        }
+        catch (invalidUser& e) {
+            cout << "Error: " << e.what() << endl;
+            return;
+        }
+
+        // Get tm stuct to get day
+        struct tm newtime;
+        time_t now = time(0);
+        localtime_s(&newtime, &now);
+        Time t(newtime.tm_hour, newtime.tm_min);
+
+        // If employee see if they have clocked in
+        if (user->getType() == 'E') {
+            shared_ptr<Employee> EmployeeUser = dynamic_pointer_cast<Employee>(user);
+            // Check if here
+            if (t > EmployeeUser->getScheduleTime(newtime.tm_wday - 1, 0) && EmployeeUser->getScheduleTime(newtime.tm_wday - 1, 1) > t) {
+                cout << "This employee should be here\n";
+            }
+            else {
+                cout << "This employee is not here\n";
+            }
+
+            // Check if late
+            if (EmployeeUser->getClockTime(newtime.tm_wday - 1, 0) > EmployeeUser->getScheduleTime(newtime.tm_wday - 1, 0)) {
+                cout << "This employee was late\n";
+            }
+            cout << "Process   | Schedule | Actual";
+            cout << "Clock In  | " << EmployeeUser->getClockTime(newtime.tm_wday - 1, 0) << " | " << EmployeeUser->getScheduleTime(newtime.tm_wday - 1, 0) << endl;
+            cout << "Clock Out | " << EmployeeUser->getClockTime(newtime.tm_wday - 1, 1) << " | " << EmployeeUser->getScheduleTime(newtime.tm_wday - 1, 1) << endl;
+        }
+        else { // If not check if they are supposed to be here
+            if (t > user->getScheduleTime(newtime.tm_wday - 1, 0) && user->getScheduleTime(newtime.tm_wday - 1, 1) > t) {
+                cout << "This employee should be here\n";
+            }
+            else {
+                cout << "This employee is not here\n";
+            }
+            cout << "Scheduled Arrival:   " << user->getScheduleTime(newtime.tm_wday - 1, 0) << endl;
+            cout << "Scheduled Departure: " << user->getScheduleTime(newtime.tm_wday - 1, 1) << endl;
         }
     }
 };
