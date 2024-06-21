@@ -628,7 +628,7 @@ int main() {
         cout << "No users found. Creating a default manager user.\n";
 
         // Create Default Manager
-        users.push_back(make_shared<Manager>("M", 1, "Manager", "password", true, 100000, "8:0 16 : 0 8 : 0 16 : 0 8 : 0 16 : 0 8 : 0 16 : 0 8 : 0 16 : 0 0 : 0 0 : 0 0 : 0 0 : 0"));
+        users.push_back(make_shared<Manager>(1, "Manager", "password", true, 100000, "8:0 16 : 0 8 : 0 16 : 0 8 : 0 16 : 0 8 : 0 16 : 0 8 : 0 16 : 0 0 : 0 0 : 0 0 : 0 0 : 0"));
         
         // Output the created manager user details
         cout << "A manager user has been created with the following ID and Password:\n";
