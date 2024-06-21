@@ -105,11 +105,6 @@ public:
     void viewPay() const {
         cout << "Pay: " << pay << endl;
     }
-    void viewAlerts() const {
-        for (const auto& alert : alerts) {
-            cout << alert << endl;
-        }
-    }
 
     string getName() { return username; }
     string getPass() { return password; }
@@ -410,7 +405,7 @@ void saveToFile(vector<shared_ptr<User>> users) {
 
 void employeeMenu(shared_ptr<Employee> user) {
     while (true) {
-        cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) View Alerts\n4) Clock In\n5) Clock Out\n6) Logout\n";
+        cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) Clock In\n4) Clock Out\n5) Logout\n";
         int input = validateNumericalInput<int>("");
 
         switch (input) {
@@ -423,21 +418,16 @@ void employeeMenu(shared_ptr<Employee> user) {
             break;
         }
         case 3: {
-            user->viewAlerts();
-            // Ask if they want to clear
-            break;
-        }
-        case 4: {
             // Verify that they haven't already clocked in
             user->clockIn();
             break;
         }
-        case 5: {
+        case 4: {
             // Verify that they have clocked in and they havent already clocked out
             user->clockOut();
             break;
         }
-        case 6: {
+        case 5: {
             return;
         }
         }
@@ -445,7 +435,7 @@ void employeeMenu(shared_ptr<Employee> user) {
 }
 void accountantMenu(shared_ptr<Accountant> user, vector<shared_ptr<User>> users) {
     while (true) {
-        cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) View Alerts\n4) Search Employee By Name\n5) Find Employee Current Pay\n6) Logout\n";
+        cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) Search Employee By Name\n4) Find Employee Current Pay\n5) Logout\n";
         int input = validateNumericalInput<int>("");
 
         switch (input) {
@@ -458,11 +448,6 @@ void accountantMenu(shared_ptr<Accountant> user, vector<shared_ptr<User>> users)
             break;
         }
         case 3: {
-            user->viewAlerts();
-            // Ask if they want to clear
-            break;
-        }
-        case 4: {
             cout << "Enter the name you would like to search for: ";
             string name;
             cin.ignore();
@@ -470,13 +455,13 @@ void accountantMenu(shared_ptr<Accountant> user, vector<shared_ptr<User>> users)
             user->searchByName(name, users);
             break;
         }
-        case 5: {
+        case 4: {
             int ID = validateNumericalInput<int>("Enter the ID of the use you want to search for: ");
 
             user->findPay(ID, users);
             break;
         }
-        case 6: {
+        case 5: {
             return;
         }
         }
@@ -484,7 +469,7 @@ void accountantMenu(shared_ptr<Accountant> user, vector<shared_ptr<User>> users)
 }
 void dutyManagerMenu(shared_ptr<DutyManager> user, vector<shared_ptr<User>> users) {
     while (true) {
-        cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) View Alerts\n4) Search Employee By Name\n5) Change Schedule\n6) Find Schedule\n7) Logout\n";
+        cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) Search Employee By Name\n4) Change Schedule\n5) Find Schedule\n6) Logout\n";
         int input = validateNumericalInput<int>("");
 
         switch (input) {
@@ -497,11 +482,6 @@ void dutyManagerMenu(shared_ptr<DutyManager> user, vector<shared_ptr<User>> user
             break;
         }
         case 3: {
-            user->viewAlerts();
-            // Ask if they want to clear
-            break;
-        }
-        case 4: {
             cout << "Enter the name you would like to search for: ";
             string name;
             cin.ignore();
@@ -509,19 +489,19 @@ void dutyManagerMenu(shared_ptr<DutyManager> user, vector<shared_ptr<User>> user
             user->searchByName(name, users);
             break;
         }
-        case 5: {
+        case 4: {
             int ID = validateNumericalInput<int>("Enter the ID of the user that is to have their schedule changed: ");
 
             user->changeSchedule(ID, users);
             break;
         }
-        case 6: {
+        case 5: {
             int ID = validateNumericalInput<int>("Enter the ID of the user you want to find the schedule of: ");
 
             user->findSchedule(ID, users);
             break;
         }
-        case 7: {
+        case 6: {
             return;
         }
         }
@@ -529,7 +509,7 @@ void dutyManagerMenu(shared_ptr<DutyManager> user, vector<shared_ptr<User>> user
 }
 void managerMenu(shared_ptr<Manager> user, vector<shared_ptr<User>> users) {
     while (true) {
-        cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) View Alerts\n4) Search Employee By Name\n5) Find Employee Current Pay\n6) Change Schedule\n7) Find Schedule\n8) Add Employee\n9) Close Program\n10) Logout\n";
+        cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) Search Employee By Name\n4) Find Employee Current Pay\n5) Change Schedule\n6) Find Schedule\n7) Add Employee\n8) Close Program\n9) Logout\n";
         int input = validateNumericalInput<int>("");
 
         switch (input) {
@@ -542,11 +522,6 @@ void managerMenu(shared_ptr<Manager> user, vector<shared_ptr<User>> users) {
             break;
         }
         case 3: {
-            user->viewAlerts();
-            // Ask if they want to clear
-            break;
-        }
-        case 4: {
             cout << "Enter the name you would like to search for: ";
             string name;
             cin.ignore();
@@ -554,32 +529,32 @@ void managerMenu(shared_ptr<Manager> user, vector<shared_ptr<User>> users) {
             user->searchByName(name, users);
             break;
         }
-        case 5: {
+        case 4: {
             int ID = validateNumericalInput<int>("Enter the ID of the use you want to search for: ");
 
             user->findPay(ID, users);
             break;
         }
-        case 6: {
+        case 5: {
             int ID = validateNumericalInput<int>("Enter the ID of the user that is to have their schedule changed: ");
 
             user->changeSchedule(ID, users);
             break;
         }
-        case 7: {
+        case 6: {
             int ID = validateNumericalInput<int>("Enter the ID of the user you want to find the schedule of: ");
 
             user->findSchedule(ID, users);
             break;
         }
-        case 8: {
+        case 7: {
             user->addEmployee(users);
         }
-        case 9: {
+        case 8: {
             saveToFile(users);
             exit(0);
         }
-        case 10: {
+        case 9: {
             return;
         }
         }
