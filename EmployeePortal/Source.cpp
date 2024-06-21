@@ -18,10 +18,11 @@ public:
 
 class Time {
 private:
+    bool set;
     int hour, minute;
 public:
-    Time() : hour(0), minute(0) {}
-    Time(int hour, int minute) : hour(hour), minute(minute) {}
+    Time() : hour(0), minute(0), set(false) {}
+    Time(int hour, int minute) : hour(hour), minute(minute), set(true) {}
 
     string output() {
         return to_string(hour) + ":" + to_string(minute);
@@ -32,9 +33,12 @@ public:
         return os;
     }
 
+    bool isSet() { return set; }
+
     void setTime(int hour, int minute) {
         this->hour = hour;
         this->minute = minute;
+        set = true;
     }
 
     bool operator>(const Time& t) {
@@ -199,16 +203,17 @@ public:
         // If employee see if they have clocked in
         if (user->getType() == 'E') {
             shared_ptr<Employee> EmployeeUser = dynamic_pointer_cast<Employee>(user);
+
             // Check if here
-            if (t > EmployeeUser->getScheduleTime(newtime.tm_wday - 1, 0) && EmployeeUser->getScheduleTime(newtime.tm_wday - 1, 1) > t) {
-                cout << "This employee should be here\n";
+            if (EmployeeUser->getScheduleTime(newtime.tm_wday - 1, 0).isSet() && !EmployeeUser->getScheduleTime(newtime.tm_wday - 1, 1).isSet()) {
+                cout << "Employee is here!\n";
             }
             else {
-                cout << "This employee is not here\n";
+                cout << "Employee is not here!\n";
             }
 
             // Check if late
-            if (EmployeeUser->getClockTime(newtime.tm_wday - 1, 0) > EmployeeUser->getScheduleTime(newtime.tm_wday - 1, 0)) {
+            if (EmployeeUser->getScheduleTime(newtime.tm_wday - 1, 0).isSet() && EmployeeUser->getClockTime(newtime.tm_wday - 1, 0) > EmployeeUser->getScheduleTime(newtime.tm_wday - 1, 0)) {
                 cout << "This employee was late\n";
             }
             cout << "Process   | Schedule | Actual";
