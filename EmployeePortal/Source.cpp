@@ -588,8 +588,16 @@ void managerMenu(shared_ptr<Manager> user, vector<shared_ptr<User>> users) {
 
 int main() {
     vector<shared_ptr<User>> users = loadFromFile();
-    // Error check if empty
-    // If empty create manager and alert user
+    if (users.empty()) {
+        cout << "No users found. Creating a default manager user.\n";
+
+        // Create Default Manager
+        users.push_back(make_shared<Manager>("M", 1, "Manager", "password", true, 100000, "8:0 16 : 0 8 : 0 16 : 0 8 : 0 16 : 0 8 : 0 16 : 0 8 : 0 16 : 0 0 : 0 0 : 0 0 : 0 0 : 0"));
+        
+        // Output the created manager user details
+        cout << "A manager user has been created with the following ID and Password:\n";
+        cout << "ID: 1 | Password: password\n";
+    }
 
     while (true) {
         cout << "-==== LOGIN ====-\nStart by entering your Employee ID: ";
