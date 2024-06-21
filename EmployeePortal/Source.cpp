@@ -116,6 +116,9 @@ public:
     void viewPay() const {
         cout << "Pay: " << pay << endl;
     }
+    void setSchedule(int day, int iteration, Time t) {
+        schedule[day][iteration] = t;
+    }
 
     string getName() { return username; }
     string getPass() { return password; }
@@ -252,6 +255,59 @@ public:
 
 class DutyManager : public virtual User, public virtual Administrative {
     // changeSchedule check if casual
+protected:
+    void changeScheduleHelper(shared_ptr<User> user) {
+        user->viewSchedule(); // Display schedule
+        while (true) { // Change schedule
+            cout << "1) Monday\n2) Tuesday\n3) Wednesday\n4) Thursday\n5) Friday\n6) Saturday\n7) Sunday\n8) Exit\n";
+            int input = validateNumericalInput<int>("What day do you want to change? ");
+            if (input > 8 || input < 1) {
+                cout << "Invalid input!\n";
+                continue;
+            }
+            else if (input == 8) {
+                return;
+            }
+
+            // Get input
+            string strInput;
+            cout << "Enter the start and end time in this format\nhour:minute hour:minute\n";
+            cin.ignore();
+            getline(cin, strInput);
+
+            // Validation to ensure correct format
+            regex timePattern(R"((\d{1,2}:\d{2}) (\d{1,2}:\d{2}))");
+            while (!regex_match(strInput, timePattern)) {
+                cout << "Invalid format. Please enter the time in 'hour:minute hour:minute' format: ";
+                getline(cin, strInput);
+            }
+
+            // Handle input and change the schedule
+            int times[4], iteration = 0;
+            string temp = "";
+            for (char c : strInput) {
+                if (c == ':' || c == ' ') {
+                    // Convert str to appropriate int space
+                    times[iteration] = stoi(temp);
+
+                    // Add iteration
+                    iteration += 1;
+
+                    // Clear string
+                    temp = "";
+                }
+                else {
+                    temp += c;
+                }
+            }
+            // Handle final
+            times[3] = stoi(temp);
+
+            Time t1(times[0], times[1]), t2(times[2], times[3]);
+            user->setSchedule(input - 1, 0, t1);
+            user->setSchedule(input - 1, 1, t2);
+        }
+    }
 public:
     DutyManager(int id, string user, string pass, bool perm, int Pay, string sched) : User(id, user, pass, perm, Pay, sched, 'D') {}
     virtual void changeSchedule(int ID, vector<shared_ptr<User>>& users) {
@@ -259,7 +315,8 @@ public:
             shared_ptr<User> user = findUserByID(ID, users);
             if (!user->isPermanent()) {
                 user->viewSchedule(); // Display schedule
-                // Change schedule
+                changeScheduleHelper(user); // Change schedule
+                return;
             }
             else {
                 cout << "This employee is not casual. Their schedule must be changed by a manager!\n";
@@ -291,7 +348,8 @@ public:
             shared_ptr<User> user = findUserByID(ID, users);
 
             user->viewSchedule(); // Display schedule
-            // Change schedule
+            changeScheduleHelper(user); // Change schedule
+            return;
         }
         catch (invalidUser& e) {
             cout << "Error: " << e.what() << endl;
