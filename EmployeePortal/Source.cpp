@@ -216,7 +216,7 @@ public:
             if (EmployeeUser->getScheduleTime(newtime.tm_wday - 1, 0).isSet() && EmployeeUser->getClockTime(newtime.tm_wday - 1, 0) > EmployeeUser->getScheduleTime(newtime.tm_wday - 1, 0)) {
                 cout << "This employee was late\n";
             }
-            cout << "Process   | Schedule | Actual";
+            cout << "Process   | Schedule | Actual\n";
             cout << "Clock In  | " << EmployeeUser->getClockTime(newtime.tm_wday - 1, 0) << " | " << EmployeeUser->getScheduleTime(newtime.tm_wday - 1, 0) << endl;
             cout << "Clock Out | " << EmployeeUser->getClockTime(newtime.tm_wday - 1, 1) << " | " << EmployeeUser->getScheduleTime(newtime.tm_wday - 1, 1) << endl;
         }
@@ -496,7 +496,7 @@ void employeeMenu(shared_ptr<Employee> user) {
 }
 void accountantMenu(shared_ptr<Accountant> user, vector<shared_ptr<User>> users) {
     while (true) {
-        cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) Search Employee By Name\n4) Find Employee Current Pay\n5) Logout\n";
+        cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) Search Employee By Name\n4) Find Employee Current Pay\n5) See if user is here\n6) Logout\n";
         int input = validateNumericalInput<int>("");
 
         switch (input) {
@@ -523,6 +523,12 @@ void accountantMenu(shared_ptr<Accountant> user, vector<shared_ptr<User>> users)
             break;
         }
         case 5: {
+            int ID = validateNumericalInput<int>("Enter the ID of the user you want to search for: ");
+
+            user->seeIfHere(ID, users);
+            break;
+        }
+        case 6: {
             return;
         }
         }
@@ -530,7 +536,7 @@ void accountantMenu(shared_ptr<Accountant> user, vector<shared_ptr<User>> users)
 }
 void dutyManagerMenu(shared_ptr<DutyManager> user, vector<shared_ptr<User>> users) {
     while (true) {
-        cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) Search Employee By Name\n4) Change Schedule\n5) Find Schedule\n6) Logout\n";
+        cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) Search Employee By Name\n4) Change Schedule\n5) Find Schedule\n6) See if users is here\n7) Logout\n";
         int input = validateNumericalInput<int>("");
 
         switch (input) {
@@ -563,6 +569,12 @@ void dutyManagerMenu(shared_ptr<DutyManager> user, vector<shared_ptr<User>> user
             break;
         }
         case 6: {
+            int ID = validateNumericalInput<int>("Enter the ID of the user you want to search for: ");
+
+            user->seeIfHere(ID, users);
+            break;
+        }
+        case 7: {
             return;
         }
         }
@@ -570,7 +582,7 @@ void dutyManagerMenu(shared_ptr<DutyManager> user, vector<shared_ptr<User>> user
 }
 void managerMenu(shared_ptr<Manager> user, vector<shared_ptr<User>> users) {
     while (true) {
-        cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) Search Employee By Name\n4) Find Employee Current Pay\n5) Change Schedule\n6) Find Schedule\n7) Add Employee\n8) Close Program\n9) Logout\n";
+        cout << "-==== MENU ====-\n1) View Schedule\n2) View Pay\n3) Search Employee By Name\n4) Find Employee Current Pay\n5) Change Schedule\n6) See if user is here\n7) Find Schedule\n8) Add Employee\n9) Close Program\n10) Logout\n";
         int input = validateNumericalInput<int>("");
 
         switch (input) {
@@ -603,19 +615,26 @@ void managerMenu(shared_ptr<Manager> user, vector<shared_ptr<User>> users) {
             break;
         }
         case 6: {
+            int ID = validateNumericalInput<int>("Enter the ID of the user you want to search for: ");
+
+            user->seeIfHere(ID, users);
+            break;
+        }
+        case 7: {
             int ID = validateNumericalInput<int>("Enter the ID of the user you want to find the schedule of: ");
 
             user->findSchedule(ID, users);
             break;
         }
-        case 7: {
-            user->addEmployee(users);
-        }
         case 8: {
+            user->addEmployee(users);
+            break;
+        }
+        case 9: {
             saveToFile(users);
             exit(0);
         }
-        case 9: {
+        case 10: {
             return;
         }
         }
